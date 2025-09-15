@@ -1,5 +1,4 @@
-﻿// PasswordLib.Tests/PasswordCheckTests.cs
-using Xunit;
+﻿using Xunit;
 using PasswordLib;
 
 namespace PasswordLib.Tests;
@@ -17,44 +16,52 @@ public class PasswordCheckTests
     }
 
     [Theory]
-    [InlineData("AAAA")]   // only uppercase
-    [InlineData("aaaa")]   // only lowercase
-    [InlineData("1234")]   // only digits
-    [InlineData("@#$%")]   // only symbols
+    [InlineData("AAAA")]   // upper only, len=4 -> 1 criterion
+    [InlineData("aaaa")]   // lower only
+    [InlineData("1234")]   // digits only
+    [InlineData("@#$%")]   // symbols only
     public void Weak_WhenExactlyOneCriterion(string input)
     {
         Assert.Equal("WEAK", PasswordCheck.Evaluate(input));
     }
 
     [Theory]
-    [InlineData("AAA1")]   // upper + digit
-    [InlineData("aaa1")]   // lower + digit
-    [InlineData("Aaaa")]   // upper + lower
-    [InlineData("A@aa")]   // upper + symbol
-    [InlineData("a@aa")]   // lower + symbol
-    [InlineData("1@11")]   // digit + symbol
-    [InlineData("Aa11")]   // upper + lower + digit
-    [InlineData("Aa@@")]   // upper + lower + symbol
-    [InlineData("a1@a")]   // lower + digit + symbol
-    [InlineData("A1@A")]   // upper + digit + symbol
+    [InlineData("Aaaa")]    // upper+lower (2)
+    [InlineData("aaa1")]    // lower+digit (2)
+    [InlineData("A@aa")]    // upper+symbol (2)
+    [InlineData("a@aa")]    // lower+symbol (2)
+    [InlineData("1@11")]    // digit+symbol (2)
+    [InlineData("Aa11")]    // upper+lower+digit (3)
+    [InlineData("Aa@@")]    // upper+lower+symbol (3)
+    [InlineData("a1@a")]    // lower+digit+symbol (3)
+    [InlineData("A1@A")]    // upper+digit+symbol (3)
     public void Medium_WhenTwoOrThreeCriteria(string input)
     {
         Assert.Equal("MEDIUM", PasswordCheck.Evaluate(input));
     }
 
     [Theory]
-    [InlineData("Aa1!")]
-    [InlineData("Passw0rd!")]
-    [InlineData("Zz9#")]
-    public void Strong_WhenAllFourCriteria(string input)
+    [InlineData("Aa1!aaaa")]   // 5/5: upper, lower, digit, symbol, len>=8
+    [InlineData("Passw0rd!")]  // 5/5
+    [InlineData("Zz9#xxxx")]   // 5/5
+    [InlineData("Aa1!aa")]     // 4/5: upper, lower, digit, symbol, but len=6 (<8) -> still STRONG under 4-or-5 mapping
+    public void Strong_WhenFourOrFiveCriteria(string input)
     {
         Assert.Equal("STRONG", PasswordCheck.Evaluate(input));
     }
 
+    // Length boundary checks
     [Fact]
-    public void Weak_WhenWhitespaceOnly_DoesNotCountAsSymbol()
+    public void Medium_WhenOnlyLengthAndOneOtherCriterion()
     {
-        // spaces only → no upper/lower/digit/symbol (since whitespace isn't symbol)
-        Assert.Equal(Ineligible, PasswordCheck.Evaluate("     "));
+        // lower + len=8 -> 2 criteria => MEDIUM
+        Assert.Equal("MEDIUM", PasswordCheck.Evaluate("aaaaaaaa"));
+    }
+
+    [Fact]
+    public void Weak_WhenOnlyOneCriterion_AndTooShort()
+    {
+        // lower only, len=4 -> 1 criterion => WEAK
+        Assert.Equal("WEAK", PasswordCheck.Evaluate("aaaa"));
     }
 }
