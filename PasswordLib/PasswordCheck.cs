@@ -54,4 +54,5 @@ public static class PasswordCheck
             _ => Ineligible
         };
     }
+
 }
